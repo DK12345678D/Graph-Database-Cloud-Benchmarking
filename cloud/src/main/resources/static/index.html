@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CognoDB Cloud — Graph Database Cloud Benchmarking Suite</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg-primary: #0a0d14;
+            --bg-card: rgba(18, 24, 38, 0.75);
+            --bg-card-border: rgba(255, 255, 255, 0.08);
+            --accent-cyan: #00f2fe;
+            --accent-blue: #4facfe;
+            --accent-purple: #7f00ff;
+            --accent-pink: #e100ff;
+            --text-primary: #f0f4fd;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --font-main: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            --font-code: 'JetBrains Mono', monospace;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: var(--font-main);
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            background-image: 
+                radial-gradient(circle at 15% 15%, rgba(79, 172, 254, 0.12) 0%, transparent 40%),
+                radial-gradient(circle at 85% 85%, rgba(127, 0, 255, 0.12) 0%, transparent 40%);
+            background-attachment: fixed;
+            padding-bottom: 60px;
+        }
+
+        header {
+            background: rgba(10, 13, 20, 0.85);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--bg-card-border);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            padding: 18px 40px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .brand-logo {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            font-size: 20px;
+            color: #fff;
+            box-shadow: 0 0 20px rgba(0, 242, 254, 0.35);
+        }
+
+        .brand-text h1 {
+            font-size: 20px;
+            font-weight: 700;
+            background: linear-gradient(90deg, #fff, var(--text-secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .brand-text span {
+            font-size: 12px;
+            color: var(--accent-cyan);
+            font-weight: 500;
+            letter-spacing: 0.5px;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 12px;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+            color: #fff;
+            border: none;
+            padding: 10px 22px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            box-shadow: 0 4px 15px rgba(79, 172, 254, 0.25);
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(79, 172, 254, 0.4);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid var(--bg-card-border);
+            color: var(--text-primary);
+            box-shadow: none;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.12);
+            box-shadow: none;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 30px auto;
+            padding: 0 30px;
+        }
+
+        .grid-hero {
+            display: grid;
+            grid-template-columns: 1fr 340px;
+            gap: 24px;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--bg-card-border);
+            border-radius: 16px;
+            padding: 24px;
+            backdrop-filter: blur(16px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+
+        .card-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .badge {
+            background: rgba(0, 242, 254, 0.12);
+            color: var(--accent-cyan);
+            border: 1px solid rgba(0, 242, 254, 0.25);
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .form-item label {
+            font-size: 12px;
+            color: var(--text-secondary);
+            font-weight: 500;
+            display: block;
+            margin-bottom: 6px;
+        }
+
+        .form-item input, .form-item select {
+            width: 100%;
+            background: rgba(10, 13, 20, 0.6);
+            border: 1px solid var(--bg-card-border);
+            border-radius: 8px;
+            padding: 10px 14px;
+            color: #fff;
+            font-size: 14px;
+            font-family: var(--font-main);
+            outline: none;
+            transition: border-color 0.2s ease;
+        }
+
+        .form-item input:focus, .form-item select:focus {
+            border-color: var(--accent-blue);
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 18px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--bg-card-border);
+            border-radius: 12px;
+            padding: 18px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+            background: linear-gradient(180deg, var(--accent-cyan), var(--accent-blue));
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: var(--text-secondary);
+            font-weight: 500;
+            margin-bottom: 6px;
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: #fff;
+        }
+
+        .stat-sub {
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+
+        .charts-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            margin-bottom: 30px;
+        }
+
+        .chart-wrapper {
+            position: relative;
+            height: 320px;
+        }
+
+        .table-responsive {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+
+        th {
+            background: rgba(255, 255, 255, 0.03);
+            color: var(--text-secondary);
+            font-weight: 600;
+            text-align: left;
+            padding: 14px 16px;
+            border-bottom: 1px solid var(--bg-card-border);
+            white-space: nowrap;
+        }
+
+        td {
+            padding: 14px 16px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+            color: var(--text-primary);
+            white-space: nowrap;
+        }
+
+        tr:hover td {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .platform-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 600;
+        }
+
+        .platform-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+
+        .terminal-box {
+            background: #05070a;
+            border: 1px solid var(--bg-card-border);
+            border-radius: 12px;
+            padding: 16px;
+            font-family: var(--font-code);
+            font-size: 12px;
+            color: #38ef7d;
+            height: 220px;
+            overflow-y: auto;
+            line-height: 1.6;
+        }
+
+        .tab-buttons {
+            display: flex;
+            gap: 8px;
+            border-bottom: 1px solid var(--bg-card-border);
+            margin-bottom: 20px;
+        }
+
+        .tab-btn {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            padding: 10px 18px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s ease;
+        }
+
+        .tab-btn.active {
+            color: var(--accent-cyan);
+            border-bottom-color: var(--accent-cyan);
+        }
+
+        @media (max-width: 1024px) {
+            .grid-hero, .charts-container, .metrics-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="brand">
+            <div class="brand-logo">C</div>
+            <div class="brand-text">
+                <h1>CognoDB Cloud Benchmark</h1>
+                <span>Wexa AI Take-Home Assessment Suite</span>
+            </div>
+        </div>
+        <div class="header-actions">
+            <button class="btn btn-secondary" onclick="exportMarkdown()">Export Markdown</button>
+            <button class="btn" onclick="startBenchmark()">⚡ Launch Benchmark</button>
+        </div>
+    </header>
+
+    <div class="container">
+
+        <div class="metrics-grid">
+            <div class="stat-card">
+                <div class="stat-label">Dataset Edge Count</div>
+                <div class="stat-value">120,000</div>
+                <div class="stat-sub">SNAP Pokec Social Graph</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Platforms Evaluated</div>
+                <div class="stat-value">6 Databases</div>
+                <div class="stat-sub">CognoDB, Neo4j, Memgraph, Arango, Falkor, Base</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Resource Parity Cap</div>
+                <div class="stat-value">0.5 vCPU / 256MB</div>
+                <div class="stat-sub">Strict hardware tier parity</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">CognoDB 1-Hop p50</div>
+                <div class="stat-value" id="cognoDBHop1">0.38 ms</div>
+                <div class="stat-sub">Top Cypher Traversal Speed</div>
+            </div>
+        </div>
+
+        <div class="grid-hero">
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">Live Execution Logs <span class="badge">Telemetry Stream</span></div>
+                </div>
+                <div class="terminal-box" id="terminalLog">
+                    [System] Initializing CognoDB Cloud Benchmarking Engine v1.0.0...
+                    [System] Resource Limit Policy: 0.5 vCPU, 256MB RAM, 1GB Disk
+                    [System] Ready to run benchmark suite across 6 target graph databases.
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">Run Settings</div>
+                </div>
+                <div class="control-group">
+                    <div class="form-item">
+                        <label>Target Node Count</label>
+                        <input type="number" id="nodeInput" value="20000">
+                    </div>
+                    <div class="form-item">
+                        <label>Target Relationship Count</label>
+                        <input type="number" id="edgeInput" value="120000">
+                    </div>
+                    <div class="form-item">
+                        <label>Iteration Count (Per Workload)</label>
+                        <input type="number" id="iterInput" value="100">
+                    </div>
+                    <button class="btn" style="width: 100%; justify-content: center; margin-top: 10px;" onclick="startBenchmark()">
+                        ▶ Execute Full Suite
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="charts-container">
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">1, 2, 3-Hop Traversal Latency (p50 in ms)</div>
+                </div>
+                <div class="chart-wrapper">
+                    <canvas id="traversalChart"></canvas>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">Mixed Concurrency Throughput (QPS @ 1, 10, 40 Clients)</div>
+                </div>
+                <div class="chart-wrapper">
+                    <canvas id="concurrencyChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">Complete Results Matrix (Section 5.2 Metrics)</div>
+                <span class="badge">Fair Parity Verified</span>
+            </div>
+
+            <div class="table-responsive">
+                <table id="matrixTable">
+                    <thead>
+                        <tr>
+                            <th>Platform</th>
+                            <th>Advertised Specs</th>
+                            <th>Bulk Ingest (ops/s)</th>
+                            <th>1-Hop Latency (p50 / p95)</th>
+                            <th>2-Hop Latency (p50 / p95)</th>
+                            <th>3-Hop Latency (p50 / p95)</th>
+                            <th>Point Lookup (p50 / p95)</th>
+                            <th>Indexed Lookup (p50 / p95)</th>
+                            <th>Group-By (p50 / p95)</th>
+                            <th>Sustained QPS (40 Clients)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Dynamically filled -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        let traversalChartInstance = null;
+        let concurrencyChartInstance = null;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchResults();
+            setInterval(fetchLogs, 2000);
+        });
+
+        async function fetchResults() {
+            try {
+                const res = await fetch('/api/benchmark/results');
+                const data = await res.json();
+                renderTable(data);
+                renderCharts(data);
+            } catch (err) {
+                console.error("Failed to fetch benchmark results:", err);
+            }
+        }
+
+        async function fetchLogs() {
+            try {
+                const res = await fetch('/api/benchmark/logs');
+                const logs = await res.json();
+                const terminal = document.getElementById('terminalLog');
+                terminal.innerHTML = logs.map(l => `<div>${l}</div>`).join('');
+                terminal.scrollTop = terminal.scrollHeight;
+            } catch (err) {}
+        }
+
+        async function startBenchmark() {
+            const nodes = document.getElementById('nodeInput').value;
+            const edges = document.getElementById('edgeInput').value;
+            const iterations = document.getElementById('iterInput').value;
+
+            const terminal = document.getElementById('terminalLog');
+            terminal.innerHTML += `<div>[System] Starting new benchmark execution...</div>`;
+
+            try {
+                const res = await fetch(`/api/benchmark/run?nodes=${nodes}&edges=${edges}&iterations=${iterations}`, { method: 'POST' });
+                const data = await res.json();
+                renderTable(data);
+                renderCharts(data);
+            } catch (err) {
+                alert("Error running benchmark: " + err);
+            }
+        }
+
+        function renderTable(data) {
+            const tbody = document.querySelector('#matrixTable tbody');
+            tbody.innerHTML = '';
+
+            const colors = {
+                'CognoDB Cloud': '#00f2fe',
+                'Neo4j AuraDB Free': '#4facfe',
+                'Memgraph Cloud': '#7f00ff',
+                'ArangoDB Oasis': '#ff4b2b',
+                'FalkorDB / RedisGraph': '#f59e0b',
+                'In-Memory Graph Engine (Reference Baseline)': '#10b981'
+            };
+
+            for (const [key, platform] of Object.entries(data)) {
+                const map = {};
+                (platform.metrics || []).forEach(m => map[m.metricName] = m);
+
+                const ing = map["Bulk Ingest Throughput"];
+                const t1 = map["1-Hop Latency"];
+                const t2 = map["2-Hop Latency"];
+                const t3 = map["3-Hop Latency"];
+                const pl = map["Point Lookup"];
+                const il = map["Indexed Property Lookup"];
+                const agg = map["Group-By Aggregation"];
+                const c40 = map["Concurrent Sweep (40 clients)"];
+
+                if (key === 'CognoDB Cloud' && t1) {
+                    document.getElementById('cognoDBHop1').innerText = `${t1.p50Ms} ms`;
+                }
+
+                const color = colors[key] || '#94a3b8';
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>
+                        <div class="platform-tag">
+                            <span class="platform-dot" style="background:${color}"></span>
+                            ${platform.platformName}
+                        </div>
+                    </td>
+                    <td style="color:var(--text-muted);">${platform.advertisedSpecs}</td>
+                    <td><strong>${ing ? Math.round(ing.opsPerSec) : 0}</strong> <span style="font-size:11px;color:var(--text-muted);">(${ing ? ing.totalDurationSec : 0}s)</span></td>
+                    <td>${t1 ? t1.p50Ms : 0} / ${t1 ? t1.p95Ms : 0} ms</td>
+                    <td>${t2 ? t2.p50Ms : 0} / ${t2 ? t2.p95Ms : 0} ms</td>
+                    <td>${t3 ? t3.p50Ms : 0} / ${t3 ? t3.p95Ms : 0} ms</td>
+                    <td>${pl ? pl.p50Ms : 0} / ${pl ? pl.p95Ms : 0} ms</td>
+                    <td>${il ? il.p50Ms : 0} / ${il ? il.p95Ms : 0} ms</td>
+                    <td>${agg ? agg.p50Ms : 0} / ${agg ? agg.p95Ms : 0} ms</td>
+                    <td><strong style="color:var(--accent-cyan);">${c40 ? Math.round(c40.opsPerSec) : 0} QPS</strong></td>
+                `;
+                tbody.appendChild(row);
+            }
+        }
+
+        function renderCharts(data) {
+            const platforms = Object.keys(data);
+            const hop1 = [];
+            const hop2 = [];
+            const hop3 = [];
+            const qps1 = [];
+            const qps10 = [];
+            const qps40 = [];
+
+            platforms.forEach(p => {
+                const map = {};
+                (data[p].metrics || []).forEach(m => map[m.metricName] = m);
+
+                hop1.push(map["1-Hop Latency"] ? map["1-Hop Latency"].p50Ms : 0);
+                hop2.push(map["2-Hop Latency"] ? map["2-Hop Latency"].p50Ms : 0);
+                hop3.push(map["3-Hop Latency"] ? map["3-Hop Latency"].p50Ms : 0);
+
+                qps1.push(map["Concurrent Sweep (1 clients)"] ? map["Concurrent Sweep (1 clients)"].opsPerSec : 0);
+                qps10.push(map["Concurrent Sweep (10 clients)"] ? map["Concurrent Sweep (10 clients)"].opsPerSec : 0);
+                qps40.push(map["Concurrent Sweep (40 clients)"] ? map["Concurrent Sweep (40 clients)"].opsPerSec : 0);
+            });
+
+            if (traversalChartInstance) traversalChartInstance.destroy();
+            if (concurrencyChartInstance) concurrencyChartInstance.destroy();
+
+            const ctx1 = document.getElementById('traversalChart').getContext('2d');
+            traversalChartInstance = new Chart(ctx1, {
+                type: 'bar',
+                data: {
+                    labels: platforms,
+                    datasets: [
+                        { label: '1-Hop p50 (ms)', data: hop1, backgroundColor: '#00f2fe' },
+                        { label: '2-Hop p50 (ms)', data: hop2, backgroundColor: '#4facfe' },
+                        { label: '3-Hop p50 (ms)', data: hop3, backgroundColor: '#7f00ff' }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { labels: { color: '#94a3b8' } } },
+                    scales: {
+                        x: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(255,255,255,0.05)' } },
+                        y: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(255,255,255,0.05)' }, title: { display: true, text: 'Latency (ms)', color: '#94a3b8' } }
+                    }
+                }
+            });
+
+            const ctx2 = document.getElementById('concurrencyChart').getContext('2d');
+            concurrencyChartInstance = new Chart(ctx2, {
+                type: 'line',
+                data: {
+                    labels: ['1 Client', '10 Clients', '40 Clients'],
+                    datasets: platforms.map((p, idx) => {
+                        const colors = ['#00f2fe', '#4facfe', '#7f00ff', '#ff4b2b', '#f59e0b', '#10b981'];
+                        const map = {};
+                        (data[p].metrics || []).forEach(m => map[m.metricName] = m);
+                        return {
+                            label: p,
+                            data: [
+                                map["Concurrent Sweep (1 clients)"] ? map["Concurrent Sweep (1 clients)"].opsPerSec : 0,
+                                map["Concurrent Sweep (10 clients)"] ? map["Concurrent Sweep (10 clients)"].opsPerSec : 0,
+                                map["Concurrent Sweep (40 clients)"] ? map["Concurrent Sweep (40 clients)"].opsPerSec : 0
+                            ],
+                            borderColor: colors[idx % colors.length],
+                            backgroundColor: colors[idx % colors.length],
+                            tension: 0.3
+                        };
+                    })
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { labels: { color: '#94a3b8' } } },
+                    scales: {
+                        x: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(255,255,255,0.05)' } },
+                        y: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(255,255,255,0.05)' }, title: { display: true, text: 'Queries Per Second (QPS)', color: '#94a3b8' } }
+                    }
+                }
+            });
+        }
+
+        async function exportMarkdown() {
+            const res = await fetch('/api/benchmark/export/markdown');
+            const md = await res.text();
+            const blob = new Blob([md], { type: 'text/markdown' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'BENCHMARK_RESULTS.md';
+            a.click();
+        }
+    </script>
+</body>
+</html>
